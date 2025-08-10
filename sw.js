@@ -1,6 +1,6 @@
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open('field-layout-v1').then(cache => cache.addAll([
+    caches.open('fit-field-v2').then(cache => cache.addAll([
       './',
       './index.html',
       './manifest.webmanifest'

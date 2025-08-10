@@ -1,132 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0f172a">
-  <link rel="manifest" href="manifest.webmanifest">
-  <title>Field Layout (PWA)</title>
-  <style>
-    :root { --bg:#0b1020; --fg:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --good:#22c55e; --warn:#f59e0b; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
-           color: var(--fg); background: linear-gradient(180deg,#0b1020 0%, #0e1630 100%); }
-    header { padding: 16px 20px; background: rgba(15,23,42,0.8); position: sticky; top: 0; backdrop-filter: blur(8px);
-             border-bottom: 1px solid rgba(255,255,255,0.08); }
-    h1 { margin: 0; font-size: 18px; }
-    main { padding: 18px; max-width: 720px; margin: 0 auto; }
-    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; }
-    button {
-      background: #1f2937; color: var(--fg); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px;
-      cursor: pointer; font-weight: 600;
-    }
-    button.primary { background: var(--accent); color: #06121a; border-color: transparent; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
-    select, input[type="number"] {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: #0b1220; color: var(--fg);
-    }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .stat { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; }
-    .stat .v { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; font-size: 16px; }
-    .note { font-size: 12px; color: var(--muted); }
-    .compass {
-      margin: 8px auto 0; width: 200px; height: 200px; border-radius: 50%; border: 2px dashed rgba(255,255,255,0.25);
-      display: grid; place-items: center; position: relative;
-    }
-    .arrow {
-      width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent;
-      border-bottom: 60px solid white; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
-      transform: rotate(0deg); transform-origin: 50% 80%;
-    }
-    .center-dot {
-      position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
-    }
-    .good { color: var(--good); }
-    .warn { color: var(--warn); }
-    .hr { height: 1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
-    footer { padding: 16px; text-align: center; font-size: 12px; color: var(--muted); }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIT Touch Field Layout</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root { --bg:#0b1020; --panel:#111827; --card:#1f2937; --fg:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+  header { padding:12px 14px; background:var(--panel); font-weight:700; text-align:center; }
+  .card { background:var(--card); margin:8px; padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  button, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.18); background:#0f172a; color:var(--fg); font-weight:600; }
+  button.primary { background:var(--accent); color:#001018; border-color:transparent; }
+  label { display:block; font-size:14px; margin:4px 0; }
+  .stat { text-align:center; padding:6px 8px; }
+  .stat .big { font-size:1.6em; font-weight:800; }
+  .compass { width:200px; height:200px; margin:6px auto 0; border-radius:50%; border:2px dashed rgba(255,255,255,0.3); display:grid; place-items:center; position:relative; }
+  .arrow { width:0; height:0; border-left:24px solid transparent; border-right:24px solid transparent; border-bottom:70px solid white; transform:rotate(0deg); transform-origin:50% 80%; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5)); }
+  #map { height:360px; border-radius:12px; overflow:hidden; position:relative; }
+  .north-arrow { position:absolute; top:8px; left:8px; width:38px; height:38px; background:rgba(17,24,39,0.8); border:1px solid rgba(255,255,255,0.15); border-radius:999px; display:grid; place-items:center; z-index:500; }
+  .north-arrow .tri { width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:18px solid #f43f5e; transform:rotate(0deg); }
+  .leaflet-control-resetview { background:rgba(17,24,39,0.85); color:#fff; border-radius:8px; padding:6px 8px; border:1px solid rgba(255,255,255,0.18); cursor:pointer; }
+  .leaflet-tooltip.line-label { background:rgba(0,0,0,0.35); color:#fff; border:0; box-shadow:none; font-weight:700; }
+  .legend { font-size:12px; color:var(--muted); }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Field Layout (PWA)</h1>
-  </header>
-  <main>
-    <div class="card">
-      <div class="grid">
-        <div>
-          <label>Field length (m)</label>
-          <input id="len" type="number" value="70" min="30" max="120" step="0.5">
-        </div>
-        <div>
-          <label>Field width (m)</label>
-          <input id="wid" type="number" value="50" min="20" max="90" step="0.5">
-        </div>
-        <div>
-          <label>Try area depth (m)</label>
-          <input id="tryd" type="number" value="5" min="0" max="22" step="0.5">
-        </div>
-        <div>
-          <label>Guide lines (m)</label>
-          <input id="offsets" type="text" value="5,10">
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <button id="btnOrigin" class="primary">Set Origin (here)</button>
-        <button id="btnOrient">Set Orientation (face length)</button>
-        <button id="btnTargets">Build Targets</button>
-      </div>
-      <div class="note" style="margin-top:8px">
-        1) Stand at the future bottom‑left corner → Set Origin. 2) Face down the long direction → Set Orientation. 3) Build Targets.
-      </div>
-    </div>
+<header>FIT Touch Field Layout</header>
 
-    <div class="card">
-      <div class="grid">
-        <div class="stat">
-          <div>GPS</div>
-          <div class="v" id="gps">…</div>
-          <div class="note" id="acc">±… m</div>
-        </div>
-        <div class="stat">
-          <div>Heading (° true)</div>
-          <div class="v" id="head">…</div>
-          <div class="note">Rotate phone upright for best compass.</div>
-        </div>
-      </div>
-      <div class="hr"></div>
-      <div class="grid">
-        <div>
-          <label>Target</label>
-          <select id="target"></select>
-        </div>
-        <div class="stat">
-          <div>Distance to target</div>
-          <div class="v" id="dist">… m</div>
-          <div class="note" id="bearNote">Bearing: …° (turn …°)</div>
-        </div>
-      </div>
-      <div class="compass">
-        <div id="arrow" class="arrow"></div>
-        <div class="center-dot"></div>
-      </div>
-    </div>
+<div class="card">
+  <label><input type="checkbox" id="chkInterchange" checked> Show Interchange Areas</label>
+  <label><input type="checkbox" id="chkSinBin" checked> Show Sin Bin Areas</label>
+  <label><input type="checkbox" id="chkInGoal" checked> Show In-Goal Areas</label>
+</div>
 
-    <div class="card">
-      <strong>Tips</strong>
-      <ul>
-        <li>Give GPS 5–10s to settle; avoid cars/fences while setting orientation.</li>
-        <li>Lay two cones per vertical line (south/north) then snap a string for straight visuals.</li>
-        <li>Add this app to your home screen for offline use (PWA).</li>
-      </ul>
-    </div>
-  </main>
-  <footer>© Field Layout PWA. No data leaves your device.</footer>
+<div class="card">
+  <div class="row">
+    <button id="btnOrigin" class="primary">Set Origin (stand at SW dead-ball corner)</button>
+    <button id="btnOrient">Set Orientation (face field length)</button>
+    <button id="btnTargets">Build Targets</button>
+  </div>
+  <div class="legend" style="margin-top:6px">After building, use the selector below to walk cone-to-cone. Map auto-fits to the full field and you can tap Reset View (↺) on the map anytime.</div>
+</div>
+
+<div class="card">
+  <label>Target</label>
+  <select id="target"></select>
+</div>
+
+<div class="card">
+  <div class="stat">
+    <div>Distance to target</div>
+    <div class="big" id="dist">… m</div>
+    <div id="bearNote">Bearing: …°</div>
+  </div>
+  <div class="compass">
+    <div id="arrow" class="arrow"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div id="map">
+    <div class="north-arrow"><div id="northTri" class="tri"></div></div>
+  </div>
+</div>
 
 <script>
-// --- Utils ---
+// ====== Geodesy helpers ======
 const R = 6378137.0;
 function toRad(d){return d*Math.PI/180;}
 function toDeg(r){return r*180/Math.PI;}
@@ -163,41 +107,72 @@ function smallestTurn(from,to){
   return d;
 }
 
-// --- State ---
-let state = {
-  origin: null,          // {lat, lon}
-  fieldBearing: null,    // degrees true
-  live: null,            // {lat, lon, acc}
-  heading: null,         // degrees true
-  targets: [],           // [{name, lat, lon}]
-};
+// ====== State ======
+let state = { origin:null, fieldBearing:null, live:null, heading:null, targets:[] };
 
-// --- DOM ---
-const gpsEl = document.getElementById('gps');
-const accEl = document.getElementById('acc');
-const headEl = document.getElementById('head');
-const distEl = document.getElementById('dist');
-const bearNoteEl = document.getElementById('bearNote');
-const targetSel = document.getElementById('target');
-const arrowEl = document.getElementById('arrow');
+// Heading smoothing (circular)
+let smooth = { x: null, y: null, alpha: 0.15 };
+function smoothHeading(deg){
+  const r = toRad(deg);
+  const cx = Math.cos(r), sy = Math.sin(r);
+  if(smooth.x===null){ smooth.x=cx; smooth.y=sy; }
+  else { smooth.x = (1-smooth.alpha)*smooth.x + smooth.alpha*cx;
+         smooth.y = (1-smooth.alpha)*smooth.y + smooth.alpha*sy; }
+  let ang = Math.atan2(smooth.y, smooth.x);
+  ang = toDeg(ang);
+  if(ang<0) ang+=360;
+  return ang;
+}
 
-// --- Sensors ---
+// ====== Map setup ======
+let map, userMarker, targetMarker, line;
+let fieldGroup = L.layerGroup();
+let zonesGroup = L.layerGroup();
+let markersGroup = L.layerGroup();
+let fieldBounds = null;
+
+function initMap(lat, lon) {
+  if(map) return;
+  map = L.map('map',{ zoomControl:true }).setView([lat, lon], 18);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  userMarker = L.circleMarker([lat, lon], { radius:6, color:'#38bdf8', fillColor:'#38bdf8', fillOpacity:1 }).addTo(map);
+  fieldGroup.addTo(map);
+  zonesGroup.addTo(map);
+  markersGroup.addTo(map);
+  // Reset View control (top-right)
+  const Reset = L.Control.extend({
+    options: { position:'topright' },
+    onAdd: function(m){
+      const div = L.DomUtil.create('div','leaflet-control-resetview');
+      div.title = 'Reset View';
+      div.innerHTML = '↺';
+      div.style.fontSize = '20px';
+      div.style.lineHeight = '20px';
+      div.style.textAlign = 'center';
+      div.style.width = '36px';
+      L.DomEvent.on(div, 'click', ()=>{
+        if(fieldBounds) map.fitBounds(fieldBounds, { padding:[30,30] });
+      });
+      return div;
+    }
+  });
+  map.addControl(new Reset());
+}
+
+// ====== Sensors ======
 if('geolocation' in navigator){
   navigator.geolocation.watchPosition(pos => {
     const {latitude, longitude, accuracy} = pos.coords;
     state.live = {lat: latitude, lon: longitude, acc: accuracy};
-    gpsEl.textContent = latitude.toFixed(6)+", "+longitude.toFixed(6);
-    accEl.textContent = "±"+(accuracy||0).toFixed(1)+" m";
-  }, err => {
-    gpsEl.textContent = "GPS error: "+err.message;
-  }, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
-} else {
-  gpsEl.textContent = "Geolocation not supported.";
+    if(!map) initMap(latitude, longitude);
+    if(userMarker) userMarker.setLatLng([latitude, longitude]);
+  }, err => console.log(err), {enableHighAccuracy:true});
 }
 
 async function initOrientation(){
   try{
-    // iOS requires permission
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       await DeviceMotionEvent.requestPermission().catch(()=>{});
     }
@@ -206,142 +181,237 @@ async function initOrientation(){
   window.addEventListener('deviceorientation', handleOrientation, true);
 }
 function handleOrientation(e){
-  // We prefer absolute alpha if available. iOS Safari may provide webkitCompassHeading (0=N, CW)
   let hdg = null;
   if (e.webkitCompassHeading !== undefined) {
-    hdg = e.webkitCompassHeading; // already true heading
+    hdg = e.webkitCompassHeading;
   } else if (e.absolute && e.alpha != null) {
-    // alpha is degrees from device coordinates to Earth frame; not always true north
-    // Fallback: just show relative heading; still usable for "turn X°" guidance once fieldBearing set from this sensor.
-    hdg = 360 - e.alpha; // attempt to align 0=N
+    hdg = 360 - e.alpha;
   }
   if (hdg != null) {
-    state.heading = (hdg + 360) % 360;
-    headEl.textContent = Math.round(state.heading);
+    state.heading = smoothHeading((hdg + 360) % 360);
   }
 }
 initOrientation();
 
-// --- UI actions ---
+// ====== UI actions ======
 document.getElementById('btnOrigin').addEventListener('click', ()=>{
-  if(!state.live){ alert("Waiting for GPS fix…"); return; }
+  if(!state.live){ alert("Waiting for GPS…"); return; }
   state.origin = {lat: state.live.lat, lon: state.live.lon};
-  toast("Origin set.");
+  alert("Origin set.");
 });
 
 document.getElementById('btnOrient').addEventListener('click', ()=>{
   if(state.heading == null){ alert("Need compass permission / heading data."); return; }
   state.fieldBearing = state.heading;
-  toast("Orientation set to "+Math.round(state.fieldBearing)+"°");
+  alert("Orientation set to "+Math.round(state.fieldBearing)+"°");
+  updateNorthArrow();
 });
 
 document.getElementById('btnTargets').addEventListener('click', ()=>{
   if(!state.origin || state.fieldBearing==null){ alert("Set Origin and Orientation first."); return; }
   buildTargets();
+  drawField();
+  drawZones();
+  plotAllMarkers();
   refreshTargetList();
-  toast("Targets built.");
+  if(fieldBounds) map.fitBounds(fieldBounds, { padding:[30,30] });
 });
 
-targetSel.addEventListener('change', ()=>{
-  // nothing—guidance is live in tick()
+['chkInterchange','chkSinBin','chkInGoal'].forEach(id => {
+  document.getElementById(id).addEventListener('change', ()=>{
+    if(!map) return;
+    drawZones();
+    plotAllMarkers();
+  });
 });
 
-function buildTargets(){
-  const L = parseFloat(document.getElementById('len').value || "70");
-  const W = parseFloat(document.getElementById('wid').value || "50");
-  const tryDepth = parseFloat(document.getElementById('tryd').value || "5");
-  const offs = (document.getElementById('offsets').value||"5,10").split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
-  const five = offs.find(n=>Math.abs(n-5)<0.1) ?? 5;
-  const ten  = offs.find(n=>Math.abs(n-10)<0.1) ?? 10;
+document.getElementById('target').addEventListener('change', ()=>{
+  plotTargetMarker();
+});
+
+// ====== Build targets & geometry ======
+function builder() {
+  const Lg = 70, Wd = 50, g = 7; // length, width, in-goal depth
   const θ = state.fieldBearing;
-
-  // helper: move dx along bearing θ, then dy along θ+90
+  const origin = state.origin;
   const move = (dx,dy)=>{
-    let p1 = project(state.origin.lat, state.origin.lon, θ, dx);
+    let p1 = project(origin.lat, origin.lon, θ, dx);
     let p2 = project(p1.lat, p1.lon, θ+90, dy);
-    return p2;
+    return [p2.lat, p2.lon];
   };
-
-  const targets = [];
-  // Corners
-  targets.push({name:"Corner SW", ...move(0,0)});
-  targets.push({name:"Corner SE", ...move(L,0)});
-  targets.push({name:"Corner NE", ...move(L,W)});
-  targets.push({name:"Corner NW", ...move(0,W)});
-
-  // Scorelines
-  targets.push({name:"Scoreline W (S)", ...move(tryDepth,0)});
-  targets.push({name:"Scoreline W (N)", ...move(tryDepth,W)});
-  targets.push({name:"Scoreline E (S)", ...move(L-tryDepth,0)});
-  targets.push({name:"Scoreline E (N)", ...move(L-tryDepth,W)});
-
-  // Halfway
-  targets.push({name:"Halfway (S)", ...move(L/2,0)});
-  targets.push({name:"Halfway (N)", ...move(L/2,W)});
-
-  // 10m either side of half
-  targets.push({name:"10m West of Half (S)", ...move(L/2 - ten, 0)});
-  targets.push({name:"10m West of Half (N)", ...move(L/2 - ten, W)});
-  targets.push({name:"10m East of Half (S)", ...move(L/2 + ten, 0)});
-  targets.push({name:"10m East of Half (N)", ...move(L/2 + ten, W)});
-
-  // 5m from each scoreline
-  targets.push({name:"5m from W score (S)", ...move(tryDepth + five, 0)});
-  targets.push({name:"5m from W score (N)", ...move(tryDepth + five, W)});
-  targets.push({name:"5m from E score (S)", ...move(L - tryDepth - five, 0)});
-  targets.push({name:"5m from E score (N)", ...move(L - tryDepth - five, W)});
-
-  state.targets = targets;
+  return {L: Lg, W: Wd, g,
+          move,
+          // precomputed base points
+          SW: move(0,0), SE: move(Lg,0), NE: move(Lg,Wd), NW: move(0,Wd)};
 }
 
+function buildTargets(){
+  const B = builder();
+  const Lg=B.L, Wd=B.W, g=B.g, move=B.move;
+  const targets=[];
+  // Corners
+  targets.push({name:"Corner SW", lat:B.SW[0], lon:B.SW[1], color:'white'});
+  targets.push({name:"Corner SE", lat:B.SE[0], lon:B.SE[1], color:'white'});
+  targets.push({name:"Corner NE", lat:B.NE[0], lon:B.NE[1], color:'white'});
+  targets.push({name:"Corner NW", lat:B.NW[0], lon:B.NW[1], color:'white'});
+  // Try lines
+  targets.push({name:"Try W S", ...latlon(move(g,0)), color:'white'});
+  targets.push({name:"Try W N", ...latlon(move(g,Wd)), color:'white'});
+  targets.push({name:"Try E S", ...latlon(move(Lg-g,0)), color:'white'});
+  targets.push({name:"Try E N", ...latlon(move(Lg-g,Wd)), color:'white'});
+  // Halfway + 10m
+  targets.push({name:"Halfway S", ...latlon(move(Lg/2,0)), color:'white'});
+  targets.push({name:"Halfway N", ...latlon(move(Lg/2,Wd)), color:'white'});
+  targets.push({name:"10m W of Half S", ...latlon(move(Lg/2-10,0)), color:'white'});
+  targets.push({name:"10m W of Half N", ...latlon(move(Lg/2-10,Wd)), color:'white'});
+  targets.push({name:"10m E of Half S", ...latlon(move(Lg/2+10,0)), color:'white'});
+  targets.push({name:"10m E of Half N", ...latlon(move(Lg/2+10,Wd)), color:'white'});
+
+  // Optional extras (cone centers)
+  if(document.getElementById('chkInGoal').checked){
+    targets.push({name:"InGoal W center", ...latlon(move(g/2,Wd/2)), color:'green'});
+    targets.push({name:"InGoal E center", ...latlon(move(Lg-g/2,Wd/2)), color:'green'});
+  }
+  if(document.getElementById('chkInterchange').checked){
+    targets.push({name:"Interchange S", ...latlon(move(Lg/2,-3)), color:'blue'});
+    targets.push({name:"Interchange N", ...latlon(move(Lg/2,Wd+3)), color:'blue'});
+  }
+  if(document.getElementById('chkSinBin').checked){
+    targets.push({name:"SinBin W", ...latlon(move(g/2,-5)), color:'red'});
+    targets.push({name:"SinBin E", ...latlon(move(Lg-g/2,Wd+5)), color:'red'});
+  }
+  state.targets = targets;
+}
+function latlon(p){ return {lat:p[0], lon:p[1]}; }
+
+// ====== Draw base field lines (always) ======
+function drawField(){
+  if(!map) return;
+  fieldGroup.clearLayers();
+  const B = builder();
+  const Lg=B.L, Wd=B.W, g=B.g, move=B.move;
+
+  // Perimeter rectangle & dead-ball lines (x=0 and x=L)
+  const perimeter = L.polygon([B.SW, B.SE, B.NE, B.NW], {color:'white', weight:2, fill:false}).addTo(fieldGroup);
+  perimeter.bindTooltip('Perimeter', {permanent:true, direction:'center', className:'line-label'}).openTooltip();
+
+  const dbW = L.polyline([B.SW, B.NW], {color:'white', weight:3}).addTo(fieldGroup);
+  dbW.bindTooltip('Dead Ball', {permanent:true, direction:'center', className:'line-label'});
+  const dbE = L.polyline([B.SE, B.NE], {color:'white', weight:3}).addTo(fieldGroup);
+  dbE.bindTooltip('Dead Ball', {permanent:true, direction:'center', className:'line-label'});
+
+  // Try lines (x=g and x=L-g)
+  const trW = L.polyline([move(g,0), move(g,Wd)], {color:'white', weight:3}).addTo(fieldGroup);
+  trW.bindTooltip('Try Line', {permanent:true, direction:'center', className:'line-label'});
+  const trE = L.polyline([move(Lg-g,0), move(Lg-g,Wd)], {color:'white', weight:3}).addTo(fieldGroup);
+  trE.bindTooltip('Try Line', {permanent:true, direction:'center', className:'line-label'});
+
+  // Halfway
+  const half = L.polyline([move(Lg/2,0), move(Lg/2,Wd)], {color:'white', weight:3}).addTo(fieldGroup);
+  half.bindTooltip('Halfway', {permanent:true, direction:'center', className:'line-label'});
+
+  // 10m lines (dashed)
+  const tenW = L.polyline([move(Lg/2-10,0), move(Lg/2-10,Wd)], {color:'white', weight:2, dashArray:'6 6'}).addTo(fieldGroup);
+  tenW.bindTooltip('10 m', {permanent:true, direction:'center', className:'line-label'});
+  const tenE = L.polyline([move(Lg/2+10,0), move(Lg/2+10,Wd)], {color:'white', weight:2, dashArray:'6 6'}).addTo(fieldGroup);
+  tenE.bindTooltip('10 m', {permanent:true, direction:'center', className:'line-label'});
+
+  // Bounds for fit
+  const latlngs = [B.SW, B.SE, B.NE, B.NW];
+  fieldBounds = L.latLngBounds(latlngs);
+}
+
+// ====== Draw optional zones ======
+function drawZones(){
+  zonesGroup.clearLayers();
+  const B = builder();
+  const Lg=B.L, Wd=B.W, g=B.g, move=B.move;
+
+  // In-goal rectangles (7m deep)
+  if(document.getElementById('chkInGoal').checked){
+    const ingW = L.polygon([move(0,0), move(g,0), move(g,Wd), move(0,Wd)], {color:'green', weight:1, fill:true, fillOpacity:0.08}).addTo(zonesGroup);
+    ingW.bindTooltip('In-Goal', {permanent:true, direction:'center', className:'line-label'});
+    const ingE = L.polygon([move(Lg-g,0), move(Lg,0), move(Lg,Wd), move(Lg-g,Wd)], {color:'green', weight:1, fill:true, fillOpacity:0.08}).addTo(zonesGroup);
+    ingE.bindTooltip('In-Goal', {permanent:true, direction:'center', className:'line-label'});
+  }
+
+  // Interchange areas: 20m wide, 3m deep outside each sideline at halfway
+  if(document.getElementById('chkInterchange').checked){
+    const icS = L.polygon([move(Lg/2-10, -3), move(Lg/2+10, -3), move(Lg/2+10, 0), move(Lg/2-10, 0)], {color:'dodgerblue', weight:1, fill:true, fillOpacity:0.12}).addTo(zonesGroup);
+    icS.bindTooltip('Interchange', {permanent:true, direction:'center', className:'line-label'});
+    const icN = L.polygon([move(Lg/2-10, Wd), move(Lg/2+10, Wd), move(Lg/2+10, Wd+3), move(Lg/2-10, Wd+3)], {color:'dodgerblue', weight:1, fill:true, fillOpacity:0.12}).addTo(zonesGroup);
+    icN.bindTooltip('Interchange', {permanent:true, direction:'center', className:'line-label'});
+  }
+
+  // Sin bin areas: short rectangles outside each sideline near in-goal centers
+  if(document.getElementById('chkSinBin').checked){
+    const sW = L.polygon([move(g/2-3.5, -1.5), move(g/2+3.5, -1.5), move(g/2+3.5, 0), move(g/2-3.5, 0)], {color:'#ef4444', weight:1, fill:true, fillOpacity:0.15}).addTo(zonesGroup);
+    sW.bindTooltip('Sin Bin', {permanent:true, direction:'center', className:'line-label'});
+    const sE = L.polygon([move(Lg-g/2-3.5, Wd), move(Lg-g/2+3.5, Wd), move(Lg-g/2+3.5, Wd+1.5), move(Lg-g/2-3.5, Wd+1.5)], {color:'#ef4444', weight:1, fill:true, fillOpacity:0.15}).addTo(zonesGroup);
+    sE.bindTooltip('Sin Bin', {permanent:true, direction:'center', className:'line-label'});
+  }
+}
+
+// ====== Markers & target guidance ======
 function refreshTargetList(){
-  targetSel.innerHTML = "";
+  const sel=document.getElementById('target');
+  sel.innerHTML='';
   state.targets.forEach((t,i)=>{
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = t.name;
-    targetSel.appendChild(opt);
+    const opt=document.createElement('option');
+    opt.value=i; opt.textContent=t.name;
+    sel.appendChild(opt);
   });
 }
 
-// Live guidance tick
+function plotAllMarkers(){
+  markersGroup.clearLayers();
+  state.targets.forEach(t=>{
+    L.circleMarker([t.lat,t.lon],{radius:5,color:t.color,fillColor:t.color,fillOpacity:1}).addTo(markersGroup).bindTooltip(t.name,{permanent:false});
+  });
+  plotTargetMarker();
+}
+
+function plotTargetMarker(){
+  if(targetMarker) { map.removeLayer(targetMarker); targetMarker=null; }
+  if(line) { map.removeLayer(line); line=null; }
+  const idx=parseInt(document.getElementById('target').value);
+  const t=state.targets[idx];
+  if(!t || !map) return;
+  targetMarker=L.marker([t.lat,t.lon]).addTo(map).bindPopup(t.name).openPopup();
+  if(state.live){
+    line=L.polyline([[state.live.lat,state.live.lon],[t.lat,t.lon]],{color:'orange'}).addTo(map);
+  }
+}
+
+// ====== Live guidance & north arrow ======
+function updateNorthArrow(){
+  if(state.fieldBearing==null) return;
+  // Show true north in field-relative coordinates: rotate arrow by -fieldBearing
+  const angle = -state.fieldBearing; // degrees
+  const tri = document.getElementById('northTri');
+  tri.style.transform = 'rotate('+angle+'deg)';
+}
+
 setInterval(()=>{
   if(!state.live || state.targets.length===0) return;
-  const idx = parseInt(targetSel.value||"0");
-  const tgt = state.targets[idx];
-  const cur = {lat: state.live.lat, lon: state.live.lon};
-  const d = haversine(cur, {lat:tgt.lat, lon:tgt.lon});
-  const brg = bearing(cur, {lat:tgt.lat, lon:tgt.lon});
-  const hdg = state.heading ?? 0;
-  const turn = smallestTurn(hdg, brg);
+  const idx=parseInt(document.getElementById('target').value);
+  const tgt=state.targets[idx];
+  const cur={lat: state.live.lat, lon: state.live.lon};
+  const d=haversine(cur,{lat:tgt.lat, lon:tgt.lon});
+  const brg=bearing(cur,{lat:tgt.lat, lon:tgt.lon});
+  const hdg=state.heading ?? 0;
+  const turn=smallestTurn(hdg,brg);
+  document.getElementById('dist').textContent=d.toFixed(1)+" m";
+  document.getElementById('bearNote').textContent="Bearing: "+Math.round(brg)+"° (turn "+(turn>=0?"+":"")+Math.round(turn)+"°)";
+  document.getElementById('arrow').style.transform="rotate("+turn.toFixed(0)+"deg)";
+  if(line) line.setLatLngs([[state.live.lat,state.live.lon],[tgt.lat,tgt.lon]]);
+}, 900);
 
-  distEl.textContent = d.toFixed(1)+" m";
-  bearNoteEl.textContent = "Bearing: "+Math.round(brg)+"° (turn "+(turn>=0?"+":"")+Math.round(turn)+"°)";
-  arrowEl.style.transform = "rotate("+turn.toFixed(0)+"deg)";
-}, 500);
-
-// --- PWA bits ---
+// ====== PWA service worker ======
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   });
-}
-
-// Simple toast
-function toast(msg){
-  const el = document.createElement('div');
-  el.textContent = msg;
-  el.style.position = 'fixed';
-  el.style.bottom = '20px';
-  el.style.left = '50%';
-  el.style.transform = 'translateX(-50%)';
-  el.style.background = 'rgba(0,0,0,0.7)';
-  el.style.color = 'white';
-  el.style.padding = '10px 14px';
-  el.style.borderRadius = '10px';
-  el.style.zIndex = '9999';
-  document.body.appendChild(el);
-  setTimeout(()=>el.remove(), 1600);
 }
 </script>
 </body>
