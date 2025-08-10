@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Field Layout (PWA)</title>
+  <style>
+    :root { --bg:#0b1020; --fg:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; --good:#22c55e; --warn:#f59e0b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+           color: var(--fg); background: linear-gradient(180deg,#0b1020 0%, #0e1630 100%); }
+    header { padding: 16px 20px; background: rgba(15,23,42,0.8); position: sticky; top: 0; backdrop-filter: blur(8px);
+             border-bottom: 1px solid rgba(255,255,255,0.08); }
+    h1 { margin: 0; font-size: 18px; }
+    main { padding: 18px; max-width: 720px; margin: 0 auto; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      background: #1f2937; color: var(--fg); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px;
+      cursor: pointer; font-weight: 600;
+    }
+    button.primary { background: var(--accent); color: #06121a; border-color: transparent; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+    select, input[type="number"] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: #0b1220; color: var(--fg);
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; }
+    .stat .v { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; font-size: 16px; }
+    .note { font-size: 12px; color: var(--muted); }
+    .compass {
+      margin: 8px auto 0; width: 200px; height: 200px; border-radius: 50%; border: 2px dashed rgba(255,255,255,0.25);
+      display: grid; place-items: center; position: relative;
+    }
+    .arrow {
+      width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent;
+      border-bottom: 60px solid white; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+      transform: rotate(0deg); transform-origin: 50% 80%;
+    }
+    .center-dot {
+      position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    }
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .hr { height: 1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+    footer { padding: 16px; text-align: center; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Field Layout (PWA)</h1>
+  </header>
+  <main>
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label>Field length (m)</label>
+          <input id="len" type="number" value="70" min="30" max="120" step="0.5">
+        </div>
+        <div>
+          <label>Field width (m)</label>
+          <input id="wid" type="number" value="50" min="20" max="90" step="0.5">
+        </div>
+        <div>
+          <label>Try area depth (m)</label>
+          <input id="tryd" type="number" value="5" min="0" max="22" step="0.5">
+        </div>
+        <div>
+          <label>Guide lines (m)</label>
+          <input id="offsets" type="text" value="5,10">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnOrigin" class="primary">Set Origin (here)</button>
+        <button id="btnOrient">Set Orientation (face length)</button>
+        <button id="btnTargets">Build Targets</button>
+      </div>
+      <div class="note" style="margin-top:8px">
+        1) Stand at the future bottom‑left corner → Set Origin. 2) Face down the long direction → Set Orientation. 3) Build Targets.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="stat">
+          <div>GPS</div>
+          <div class="v" id="gps">…</div>
+          <div class="note" id="acc">±… m</div>
+        </div>
+        <div class="stat">
+          <div>Heading (° true)</div>
+          <div class="v" id="head">…</div>
+          <div class="note">Rotate phone upright for best compass.</div>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="grid">
+        <div>
+          <label>Target</label>
+          <select id="target"></select>
+        </div>
+        <div class="stat">
+          <div>Distance to target</div>
+          <div class="v" id="dist">… m</div>
+          <div class="note" id="bearNote">Bearing: …° (turn …°)</div>
+        </div>
+      </div>
+      <div class="compass">
+        <div id="arrow" class="arrow"></div>
+        <div class="center-dot"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Tips</strong>
+      <ul>
+        <li>Give GPS 5–10s to settle; avoid cars/fences while setting orientation.</li>
+        <li>Lay two cones per vertical line (south/north) then snap a string for straight visuals.</li>
+        <li>Add this app to your home screen for offline use (PWA).</li>
+      </ul>
+    </div>
+  </main>
+  <footer>© Field Layout PWA. No data leaves your device.</footer>
+
+<script>
+// --- Utils ---
+const R = 6378137.0;
+function toRad(d){return d*Math.PI/180;}
+function toDeg(r){return r*180/Math.PI;}
+function project(lat, lon, bearingDeg, distanceM){
+  const br = toRad(bearingDeg), dR = distanceM / R;
+  const phi1 = toRad(lat), lam1 = toRad(lon);
+  const sinPhi2 = Math.sin(phi1)*Math.cos(dR) + Math.cos(phi1)*Math.sin(dR)*Math.cos(br);
+  const phi2 = Math.asin(sinPhi2);
+  const y = Math.sin(br)*Math.sin(dR)*Math.cos(phi1);
+  const x = Math.cos(dR) - Math.sin(phi1)*sinPhi2;
+  const lam2 = lam1 + Math.atan2(y, x);
+  return { lat: toDeg(phi2), lon: ((toDeg(lam2)+540)%360)-180 };
+}
+function haversine(a,b){
+  const dphi = toRad(b.lat - a.lat);
+  const dlam = toRad(b.lon - a.lon);
+  const phi1 = toRad(a.lat), phi2 = toRad(b.lat);
+  const A = Math.sin(dphi/2)**2 + Math.cos(phi1)*Math.cos(phi2)*Math.sin(dlam/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(A), Math.sqrt(1-A));
+}
+function bearing(a,b){
+  const phi1 = toRad(a.lat), phi2 = toRad(b.lat);
+  const dlam = toRad(b.lon - a.lon);
+  const y = Math.sin(dlam)*Math.cos(phi2);
+  const x = Math.cos(phi1)*Math.sin(phi2) - Math.sin(phi1)*Math.cos(phi2)*Math.cos(dlam);
+  let th = toDeg(Math.atan2(y,x));
+  if(th<0) th+=360;
+  return th;
+}
+function smallestTurn(from,to){
+  let d = to - from;
+  while(d>180) d-=360;
+  while(d<-180) d+=360;
+  return d;
+}
+
+// --- State ---
+let state = {
+  origin: null,          // {lat, lon}
+  fieldBearing: null,    // degrees true
+  live: null,            // {lat, lon, acc}
+  heading: null,         // degrees true
+  targets: [],           // [{name, lat, lon}]
+};
+
+// --- DOM ---
+const gpsEl = document.getElementById('gps');
+const accEl = document.getElementById('acc');
+const headEl = document.getElementById('head');
+const distEl = document.getElementById('dist');
+const bearNoteEl = document.getElementById('bearNote');
+const targetSel = document.getElementById('target');
+const arrowEl = document.getElementById('arrow');
+
+// --- Sensors ---
+if('geolocation' in navigator){
+  navigator.geolocation.watchPosition(pos => {
+    const {latitude, longitude, accuracy} = pos.coords;
+    state.live = {lat: latitude, lon: longitude, acc: accuracy};
+    gpsEl.textContent = latitude.toFixed(6)+", "+longitude.toFixed(6);
+    accEl.textContent = "±"+(accuracy||0).toFixed(1)+" m";
+  }, err => {
+    gpsEl.textContent = "GPS error: "+err.message;
+  }, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
+} else {
+  gpsEl.textContent = "Geolocation not supported.";
+}
+
+async function initOrientation(){
+  try{
+    // iOS requires permission
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      await DeviceMotionEvent.requestPermission().catch(()=>{});
+    }
+  }catch(e){}
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+function handleOrientation(e){
+  // We prefer absolute alpha if available. iOS Safari may provide webkitCompassHeading (0=N, CW)
+  let hdg = null;
+  if (e.webkitCompassHeading !== undefined) {
+    hdg = e.webkitCompassHeading; // already true heading
+  } else if (e.absolute && e.alpha != null) {
+    // alpha is degrees from device coordinates to Earth frame; not always true north
+    // Fallback: just show relative heading; still usable for "turn X°" guidance once fieldBearing set from this sensor.
+    hdg = 360 - e.alpha; // attempt to align 0=N
+  }
+  if (hdg != null) {
+    state.heading = (hdg + 360) % 360;
+    headEl.textContent = Math.round(state.heading);
+  }
+}
+initOrientation();
+
+// --- UI actions ---
+document.getElementById('btnOrigin').addEventListener('click', ()=>{
+  if(!state.live){ alert("Waiting for GPS fix…"); return; }
+  state.origin = {lat: state.live.lat, lon: state.live.lon};
+  toast("Origin set.");
+});
+
+document.getElementById('btnOrient').addEventListener('click', ()=>{
+  if(state.heading == null){ alert("Need compass permission / heading data."); return; }
+  state.fieldBearing = state.heading;
+  toast("Orientation set to "+Math.round(state.fieldBearing)+"°");
+});
+
+document.getElementById('btnTargets').addEventListener('click', ()=>{
+  if(!state.origin || state.fieldBearing==null){ alert("Set Origin and Orientation first."); return; }
+  buildTargets();
+  refreshTargetList();
+  toast("Targets built.");
+});
+
+targetSel.addEventListener('change', ()=>{
+  // nothing—guidance is live in tick()
+});
+
+function buildTargets(){
+  const L = parseFloat(document.getElementById('len').value || "70");
+  const W = parseFloat(document.getElementById('wid').value || "50");
+  const tryDepth = parseFloat(document.getElementById('tryd').value || "5");
+  const offs = (document.getElementById('offsets').value||"5,10").split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+  const five = offs.find(n=>Math.abs(n-5)<0.1) ?? 5;
+  const ten  = offs.find(n=>Math.abs(n-10)<0.1) ?? 10;
+  const θ = state.fieldBearing;
+
+  // helper: move dx along bearing θ, then dy along θ+90
+  const move = (dx,dy)=>{
+    let p1 = project(state.origin.lat, state.origin.lon, θ, dx);
+    let p2 = project(p1.lat, p1.lon, θ+90, dy);
+    return p2;
+  };
+
+  const targets = [];
+  // Corners
+  targets.push({name:"Corner SW", ...move(0,0)});
+  targets.push({name:"Corner SE", ...move(L,0)});
+  targets.push({name:"Corner NE", ...move(L,W)});
+  targets.push({name:"Corner NW", ...move(0,W)});
+
+  // Scorelines
+  targets.push({name:"Scoreline W (S)", ...move(tryDepth,0)});
+  targets.push({name:"Scoreline W (N)", ...move(tryDepth,W)});
+  targets.push({name:"Scoreline E (S)", ...move(L-tryDepth,0)});
+  targets.push({name:"Scoreline E (N)", ...move(L-tryDepth,W)});
+
+  // Halfway
+  targets.push({name:"Halfway (S)", ...move(L/2,0)});
+  targets.push({name:"Halfway (N)", ...move(L/2,W)});
+
+  // 10m either side of half
+  targets.push({name:"10m West of Half (S)", ...move(L/2 - ten, 0)});
+  targets.push({name:"10m West of Half (N)", ...move(L/2 - ten, W)});
+  targets.push({name:"10m East of Half (S)", ...move(L/2 + ten, 0)});
+  targets.push({name:"10m East of Half (N)", ...move(L/2 + ten, W)});
+
+  // 5m from each scoreline
+  targets.push({name:"5m from W score (S)", ...move(tryDepth + five, 0)});
+  targets.push({name:"5m from W score (N)", ...move(tryDepth + five, W)});
+  targets.push({name:"5m from E score (S)", ...move(L - tryDepth - five, 0)});
+  targets.push({name:"5m from E score (N)", ...move(L - tryDepth - five, W)});
+
+  state.targets = targets;
+}
+
+function refreshTargetList(){
+  targetSel.innerHTML = "";
+  state.targets.forEach((t,i)=>{
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = t.name;
+    targetSel.appendChild(opt);
+  });
+}
+
+// Live guidance tick
+setInterval(()=>{
+  if(!state.live || state.targets.length===0) return;
+  const idx = parseInt(targetSel.value||"0");
+  const tgt = state.targets[idx];
+  const cur = {lat: state.live.lat, lon: state.live.lon};
+  const d = haversine(cur, {lat:tgt.lat, lon:tgt.lon});
+  const brg = bearing(cur, {lat:tgt.lat, lon:tgt.lon});
+  const hdg = state.heading ?? 0;
+  const turn = smallestTurn(hdg, brg);
+
+  distEl.textContent = d.toFixed(1)+" m";
+  bearNoteEl.textContent = "Bearing: "+Math.round(brg)+"° (turn "+(turn>=0?"+":"")+Math.round(turn)+"°)";
+  arrowEl.style.transform = "rotate("+turn.toFixed(0)+"deg)";
+}, 500);
+
+// --- PWA bits ---
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+// Simple toast
+function toast(msg){
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.position = 'fixed';
+  el.style.bottom = '20px';
+  el.style.left = '50%';
+  el.style.transform = 'translateX(-50%)';
+  el.style.background = 'rgba(0,0,0,0.7)';
+  el.style.color = 'white';
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '10px';
+  el.style.zIndex = '9999';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1600);
+}
+</script>
+</body>
+</html>
